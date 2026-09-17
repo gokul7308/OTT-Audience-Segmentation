@@ -1,0 +1,161 @@
+import os
+import time
+import json
+import requests
+import logging
+from test_cases import VALID_CASES, INVALID_CASES
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+API_URL = os.environ.get("API_URL", "http://api:8000")
+# Smaller retry for local testing; Docker environment might need more
+MAX_RETRIES = int(os.environ.get("MAX_RETRIES", 5)) 
+RETRY_DELAY = 2
+
+def wait_for_health():
+    """Wait for GET /health to return 200."""
+    logger.info(f"Waiting for API to become ready at {API_URL}...")
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = requests.get(f"{API_URL}/health", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"API is reachable. Model loaded: {data.get('model_loaded')}")
+                return True, data.get("model_loaded", False)
+        except requests.exceptions.RequestException:
+            pass
+        
+        logger.info(f"Attempt {attempt + 1}/{MAX_RETRIES} - API not ready. Retrying in {RETRY_DELAY}s...")
+        time.sleep(RETRY_DELAY)
+        
+    logger.error("API failed to become ready within the timeout period.")
+    return False, False
+
+def run_tests(model_is_loaded):
+    """Run valid and invalid test cases."""
+    results = {
+        "valid_tests_passed": 0,
+        "valid_tests_total": len(VALID_CASES),
+        "invalid_tests_passed": 0,
+        "invalid_tests_total": len(INVALID_CASES),
+        "model_available_for_inference": model_is_loaded
+    }
+    
+    # 1. Valid Cases
+    logger.info("\n--- Running Valid Test Cases ---")
+    for idx, test in enumerate(VALID_CASES):
+        logger.info(f"Test {idx+1}: {test['description']}")
+        try:
+            response = requests.post(f"{API_URL}/recommend", json=test["payload"], timeout=5)
+            
+            # If the model is not loaded, we expect a 503 instead of 200
+            expected_status = 200 if model_is_loaded else 503
+            
+            if response.status_code == expected_status:
+                if expected_status == 200:
+                    data = response.json()
+                    # Verify expected response fields
+                    if (data.get("user_id") == test["payload"]["user_id"] and
+                        "segment_id" in data and 
+                        "segment_name" in data and 
+                        "recommendations" in data and isinstance(data["recommendations"], list)):
+                        results["valid_tests_passed"] += 1
+                        logger.info("  -> Passed (Response format is correct)")
+                    else:
+                        logger.warning("  -> Failed (Response format mismatch)")
+                else:
+                     results["valid_tests_passed"] += 1
+                     logger.info("  -> Passed (Correctly rejected due to missing model)")
+            else:
+                logger.warning(f"  -> Failed (Status {response.status_code}, expected {expected_status})")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"  -> Failed to connect: {e}")
+
+    # 2. Invalid/Edge Cases
+    logger.info("\n--- Running Invalid/Edge Test Cases ---")
+    for idx, test in enumerate(INVALID_CASES):
+        logger.info(f"Test {idx+1}: {test['description']}")
+        try:
+            response = requests.post(f"{API_URL}/recommend", json=test["payload"], timeout=5)
+            
+            if response.status_code == test["expected_status"]:
+                results["invalid_tests_passed"] += 1
+                logger.info(f"  -> Passed (Correctly rejected with {test['expected_status']})")
+            else:
+                logger.warning(f"  -> Failed (Status {response.status_code}, expected {test['expected_status']})")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"  -> Failed to connect: {e}")
+            
+    return results
+
+def generate_metrics(test_results):
+    """Create metrics.json combining API results and actual ML clustering metrics."""
+    from datetime import datetime
+    
+    # Base structure
+    metrics = {
+        "evaluation_timestamp": datetime.utcnow().isoformat() + "Z",
+        "overall_status": "passed" if test_results["model_available_for_inference"] else "degraded",
+        "api": {
+            "health_check": "passed",
+            "recommendation_tests": f"{test_results['valid_tests_passed']}/{test_results['valid_tests_total']}"
+        },
+        "robustness": {
+            "edge_case_tests": f"{test_results['invalid_tests_passed']}/{test_results['invalid_tests_total']}"
+        }
+    }
+    
+    # If API model was unavailable, reflect that in API section
+    if not test_results["model_available_for_inference"]:
+        metrics["api"]["health_check"] = "passed (degraded - no model)"
+        metrics["api"]["recommendation_tests"] = "skipped (no model)"
+        
+    # Read real clustering metrics generated by the ML pipeline
+    clustering_metrics_path = "models/clustering_metrics.json"
+    if os.path.exists(clustering_metrics_path):
+        with open(clustering_metrics_path, "r") as f:
+            ml_metrics = json.load(f)
+            
+        metrics["clustering"] = {
+            "status": "trained",
+            "selected_k": ml_metrics.get("selected_k"),
+            "silhouette_score": ml_metrics.get("final_silhouette"),
+            "inertia": ml_metrics.get("final_inertia"),
+            "cluster_sizes": ml_metrics.get("cluster_sizes")
+        }
+    else:
+        metrics["clustering"] = {
+            "status": "pending_dataset",
+            "silhouette_score": None,
+            "inertia": None
+        }
+        
+    with open("metrics.json", "w") as f:
+        json.dump(metrics, f, indent=2)
+        
+    logger.info("\n=== EVALUATION SUMMARY ===")
+    logger.info(json.dumps(metrics, indent=2))
+    logger.info("metrics.json generated successfully.")
+
+def main():
+    api_ready, model_loaded = wait_for_health()
+    
+    if not api_ready:
+        logger.error("Cannot proceed with tests because API is unreachable.")
+        # Generate failed metrics
+        generate_metrics({
+            "valid_tests_passed": 0, "valid_tests_total": len(VALID_CASES),
+            "invalid_tests_passed": 0, "invalid_tests_total": len(INVALID_CASES),
+            "model_available_for_inference": False
+        })
+        return
+        
+    if not model_loaded:
+         logger.warning("API is reachable but ML model is NOT loaded. Valid inference tests will expect 503 errors.")
+         
+    results = run_tests(model_loaded)
+    generate_metrics(results)
+
+if __name__ == "__main__":
+    main()

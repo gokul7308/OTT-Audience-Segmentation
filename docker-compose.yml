@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  trainer:
+    build:
+      context: ./trainer
+    environment:
+      - DATA_DIR=/data/raw
+      - MODEL_DIR=/models
+    volumes:
+      - ./data/raw:/app/data/raw:ro
+      - models:/models
+
+  api:
+    build:
+      context: ./backend/api
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_DIR=/models
+    volumes:
+      - models:/models:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
+
+  evaluator:
+    build:
+      context: ./evaluator
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - models:/app/models:ro
+      - ./metrics.json:/app/metrics.json
+
+volumes:
+  models:
+    name: models

@@ -1,0 +1,50 @@
+{
+  "number_of_users": 6040,
+  "number_of_features": 27,
+  "feature_names": [
+    "interaction_count",
+    "average_rating",
+    "rating_std",
+    "activity_span_days",
+    "recency_days",
+    "active_days",
+    "interactions_per_active_day",
+    "weekend_interaction_ratio",
+    "unique_genre_count",
+    "genre_prop_action",
+    "genre_prop_adventure",
+    "genre_prop_animation",
+    "genre_prop_childrens",
+    "genre_prop_comedy",
+    "genre_prop_crime",
+    "genre_prop_documentary",
+    "genre_prop_drama",
+    "genre_prop_fantasy",
+    "genre_prop_film_noir",
+    "genre_prop_horror",
+    "genre_prop_musical",
+    "genre_prop_mystery",
+    "genre_prop_romance",
+    "genre_prop_sci_fi",
+    "genre_prop_thriller",
+    "genre_prop_war",
+    "genre_prop_western"
+  ],
+  "source_files": [
+    "ratings.dat",
+    "movies.dat"
+  ],
+  "feature_descriptions": {
+    "interaction_count": "Total ratings given by the user.",
+    "average_rating": "Mean rating score.",
+    "rating_std": "Standard deviation of ratings.",
+    "activity_span_days": "Days between first and last interaction.",
+    "recency_days": "Days since the user's last interaction relative to dataset max timestamp.",
+    "active_days": "Number of unique days the user interacted.",
+    "interactions_per_active_day": "Ratio of interactions to active days.",
+    "weekend_interaction_ratio": "Proportion of interactions that occurred on a weekend.",
+    "unique_genre_count": "Number of distinct genres engaged with.",
+    "genre_prop_*": "Proportion of interactions involving this genre out of total genre-interactions."
+  },
+  "data_quality_notes": "NaN rating_std filled with 0. Duplicates dropped. No NaN or Infinite values in final matrix."
+}

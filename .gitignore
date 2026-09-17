@@ -1,0 +1,28 @@
+# Environments
+.env
+frontend/.env
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Data
+data/raw/*.dat
+data/raw/*.csv
+
+# Models
+models/*.pkl
+models/*.joblib
+
+# Frontend Build
+frontend/dist/
+frontend/node_modules/
+
+# OS
+.DS_Store
+ml-1m/

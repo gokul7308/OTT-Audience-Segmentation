@@ -1,0 +1,69 @@
+{
+  "metadata": {
+    "random_seed": 42,
+    "selected_k": 3
+  },
+  "segments": {
+    "0": {
+      "segment_id": 0,
+      "segment_name": "High-Activity Viewers (Drama, Comedy)",
+      "cluster_size": 656,
+      "percentage_of_users": 10.86,
+      "dominant_genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "recommendation_strategy": [
+        "Prioritize titles in Drama and Comedy.",
+        "Promote broad discovery and back-catalog titles.",
+        "Mix preferred genres with mainstream hits."
+      ],
+      "key_characteristics": {
+        "avg_interaction_count": 404.93,
+        "avg_unique_genres": 17.38,
+        "avg_activity_span_days": 669.5,
+        "avg_rating": 3.63
+      }
+    },
+    "1": {
+      "segment_id": 1,
+      "segment_name": "Regular Viewers (Action, Comedy)",
+      "cluster_size": 2422,
+      "percentage_of_users": 40.1,
+      "dominant_genres": [
+        "Action",
+        "Comedy"
+      ],
+      "recommendation_strategy": [
+        "Prioritize titles in Action and Comedy.",
+        "Mix preferred genres with mainstream hits."
+      ],
+      "key_characteristics": {
+        "avg_interaction_count": 169.25,
+        "avg_unique_genres": 15.67,
+        "avg_activity_span_days": 22.5,
+        "avg_rating": 3.62
+      }
+    },
+    "2": {
+      "segment_id": 2,
+      "segment_name": "Regular Viewers (Drama, Comedy)",
+      "cluster_size": 2962,
+      "percentage_of_users": 49.04,
+      "dominant_genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "recommendation_strategy": [
+        "Prioritize titles in Drama and Comedy.",
+        "Mix preferred genres with mainstream hits."
+      ],
+      "key_characteristics": {
+        "avg_interaction_count": 109.61,
+        "avg_unique_genres": 15.03,
+        "avg_activity_span_days": 27.04,
+        "avg_rating": 3.78
+      }
+    }
+  }
+}
