@@ -26,6 +26,7 @@ services:
       - MODEL_DIR=/models
     volumes:
       - models_volume:/models:ro
+      - batches_volume:/app/data/batches
     depends_on:
       trainer:
         condition: service_completed_successfully
@@ -54,6 +55,20 @@ services:
         condition: service_healthy
     restart: "no"
 
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: ott_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   models_volume:
     name: ott_models_volume
+  batches_volume:
+    name: ott_batches_volume

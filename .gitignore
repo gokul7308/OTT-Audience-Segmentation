@@ -25,3 +25,11 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Batch Storage
+data/batches/*
+!data/batches/.gitkeep

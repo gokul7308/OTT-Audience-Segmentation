@@ -11,12 +11,14 @@ WORKDIR /app
 COPY api/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy API and trainer source code (for shared modules if needed)
+# Copy API, trainer, and reference data source code
 COPY api/ /app/api/
 COPY trainer/ /app/trainer/
+COPY data/ /app/data/
 
-# Create a non-root user for container security
-RUN useradd -m -u 1000 appuser && \
+# Create non-root user and ensure data directories are writable
+RUN mkdir -p /app/data/batches && \
+    useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
